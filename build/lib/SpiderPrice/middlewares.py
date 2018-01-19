@@ -4,12 +4,13 @@
 #
 # See documentation in:
 # https://doc.scrapy.org/en/latest/topics/spider-middleware.html
-from clonevirtualenv import logger
+import time
+
 from fake_useragent import UserAgent
 from scrapy import signals
 
 
-class SpiderpriceSpiderMiddleware(object):
+class AgriteachSpiderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the spider middleware does not modify the
     # passed objects.
@@ -57,7 +58,7 @@ class SpiderpriceSpiderMiddleware(object):
         spider.logger.info('Spider opened: %s' % spider.name)
 
 
-class SpiderpriceDownloaderMiddleware(object):
+class AgriteachDownloaderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the downloader middleware does not modify the
     # passed objects.
@@ -79,8 +80,9 @@ class SpiderpriceDownloaderMiddleware(object):
         # - or return a Request object
         # - or raise IgnoreRequest: process_exception() methods of
         #   installed downloader middleware will be called
-        request.headers.setdefault('User-Agent', UserAgent())
-        return request
+        user = getattr(UserAgent(), 'random')
+        request.headers['User-Agent'] = user
+
 
     def process_response(self, request, response, spider):
         # Called with the response returned from the downloader.
@@ -103,4 +105,3 @@ class SpiderpriceDownloaderMiddleware(object):
 
     def spider_opened(self, spider):
         spider.logger.info('Spider opened: %s' % spider.name)
-

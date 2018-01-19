@@ -24,7 +24,8 @@ class AgripriceSpider(scrapy.Spider):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.index = json.loads(open(os.path.join(BASE_DIIR, "index.json"), 'r', encoding='utf-8').read())
+        indexdata = open("H:/pycharm/SpiderPrice/index/index.json", 'r', encoding='utf-8').read()
+        self.index = json.loads(indexdata)
         self.cookie_dict = {}
         self.querystring = {"par_craft_index": "",  # 类别编号
                             "craft_index": "",  # 产品编号
@@ -36,19 +37,6 @@ class AgripriceSpider(scrapy.Spider):
                             }
 
     def start_requests(self):
-        from selenium import webdriver
-        browser = webdriver.PhantomJS()
-        browser.get(self.start_urls[0])
-        time.sleep(1)
-        cookies = browser.get_cookies()
-        for cookie in cookies:
-            # 写入文件
-            f = open(os.path.join(BASE_DIIR, "tools", "Cookies.txt"), 'wb')
-            pickle.dump(cookie, f)
-            f.close()
-            self.cookie_dict[cookie['name']] = cookie['value']
-        browser.close()
-
         index = self.index
         today = datetime.date.today()
         start_day = today - datetime.timedelta(days=2)
@@ -63,7 +51,6 @@ class AgripriceSpider(scrapy.Spider):
                 self.querystring["craft_index"] = product_id
                 parses = urlencode(self.querystring)
                 url = self.start_urls[0] + "?" + parses
-
                 yield Request(
                     url=url,
                     dont_filter=True,

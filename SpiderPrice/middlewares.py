@@ -4,12 +4,14 @@
 #
 # See documentation in:
 # https://doc.scrapy.org/en/latest/topics/spider-middleware.html
-from clonevirtualenv import logger
+import time
+
 from fake_useragent import UserAgent
 from scrapy import signals
+from scrapy.http import HtmlResponse
 
 
-class SpiderpriceSpiderMiddleware(object):
+class AgriteachSpiderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the spider middleware does not modify the
     # passed objects.
@@ -57,10 +59,14 @@ class SpiderpriceSpiderMiddleware(object):
         spider.logger.info('Spider opened: %s' % spider.name)
 
 
-class SpiderpriceDownloaderMiddleware(object):
+class AgriteachDownloaderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the downloader middleware does not modify the
     # passed objects.
+
+    def __init__(self):
+        from selenium import webdriver
+        self.driver = webdriver.Chrome()
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -79,8 +85,12 @@ class SpiderpriceDownloaderMiddleware(object):
         # - or return a Request object
         # - or raise IgnoreRequest: process_exception() methods of
         #   installed downloader middleware will be called
-        request.headers.setdefault('User-Agent', UserAgent())
-        return request
+        user = getattr(UserAgent(), 'random')
+        request.headers['User-Agent'] = user
+        self.driver.get(request.url)
+        response = self.driver.page_source
+        # 关键
+        return HtmlResponse(self.driver.current_url, status=200, body=response, request=request, encoding='utf-8')
 
     def process_response(self, request, response, spider):
         # Called with the response returned from the downloader.
@@ -104,3 +114,5 @@ class SpiderpriceDownloaderMiddleware(object):
     def spider_opened(self, spider):
         spider.logger.info('Spider opened: %s' % spider.name)
 
+    def spider_closed(self, spider):
+        self.driver.close()
