@@ -75,7 +75,7 @@ DOWNLOADER_MIDDLEWARES = {
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     # 'SpiderPrice.pipelines.AgriPricePipeline': 400,
-    # 'scrapy_redis.pipelines.RedisPipeline': 300,
+    'scrapy_redis.pipelines.RedisPipeline': 300,
     'SpiderPrice.pipelines.MysqlTwistedPipline': 300,
 }
 
