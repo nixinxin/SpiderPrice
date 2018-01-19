@@ -1,29 +1,22 @@
 # -*- coding: utf-8 -*-
 import json
-import os
-import time
 import datetime
-
-import re
-import pickle
-
 from urllib.parse import urlencode
-from urllib.request import urlparse
 
-import scrapy
 from scrapy import Request
-from scrapy.loader import ItemLoader
+from scrapy_redis.spiders import RedisSpider
 from SpiderPrice.items import SpiderpriceItem
-from SpiderPrice.settings import BASE_DIIR
+from SpiderPrice.settings import STARTDAY, TIMEDELTA
 
 
-class AgripriceSpider(scrapy.Spider):
+class AgripriceSpider(RedisSpider):
+
     name = 'agriprice'
+    redis_key = "agriprice:start_urls"
     allowed_domains = ['nc.mofcom.gov.cn']
     start_urls = ['http://nc.mofcom.gov.cn/channel/jghq2017/price_list.shtml']
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *args, **kwargs):
         indexdata = open("index/index.json", 'r', encoding='utf-8').read()
         self.index = json.loads(indexdata)
         self.cookie_dict = {}
@@ -36,30 +29,41 @@ class AgripriceSpider(scrapy.Spider):
                             "keyword": "",
                             }
 
-    def start_requests(self):
-        index = self.index
-        today = datetime.date.today()
-        start_day = today - datetime.timedelta(days=2)
-        self.querystring["startTime"] = start_day
-        self.querystring["endTime"] = today
-        for item in index:
-            category_id = item['id']
-            category = item['product']
-            self.querystring["par_craft_index"] = category_id
-            for product in item['sub_value'].keys():
-                product_id = item['sub_value'][product]
-                self.querystring["craft_index"] = product_id
-                parses = urlencode(self.querystring)
-                url = self.start_urls[0] + "?" + parses
-                yield Request(
-                    url=url,
-                    dont_filter=True,
-                    callback=self.parse,
-                    meta={"category": category},
-                    cookies=self.cookie_dict
-                )
+        super(AgripriceSpider, self).__init__()
 
     def parse(self, response):
+        start = datetime.datetime.strptime(STARTDAY, '%Y-%m-%d').date()
+        end = datetime.date.today()
+        interval = int(int((end - start).days) / TIMEDELTA) + 1
+        ninedays = datetime.timedelta(days=TIMEDELTA)
+        for i in range(0, interval):
+            start_day = (start + ninedays * i)
+            if i == interval - 1:
+                end_day = datetime.date.today()
+            else:
+                end_day = start_day + ninedays
+            self.querystring["startTime"] = start_day
+            self.querystring["endTime"] = end_day
+
+            for item in self.index:
+                category_id = item['id']
+                category = item['product']
+                self.querystring["par_craft_index"] = category_id
+
+                for product in item['sub_value'].keys():
+                    product_id = item['sub_value'][product]
+                    self.querystring["craft_index"] = product_id
+                    parses = urlencode(self.querystring)
+                    url = self.start_urls[0] + "?" + parses
+                    yield Request(
+                        url=url,
+                        dont_filter=True,
+                        callback=self.parse_two,
+                        meta={"category": category},
+                        cookies=self.cookie_dict
+                    )
+
+    def parse_two(self, response):
         try:
             all_page = int(response.css(".table-01.mt30 + script::text").extract_first().split(";")[0].split("=")[-1].strip())
         except:
@@ -73,11 +77,11 @@ class AgripriceSpider(scrapy.Spider):
             yield Request(
                 url=url,
                 dont_filter=True,
-                callback=self.parse_detail,
+                callback=self.parse_three,
                 meta={"category": response.meta.get("category", "")}
             )
 
-    def parse_detail(self, response):
+    def parse_three(self, response):
         reports = response.css(".table-01.mt30 tr")
         for report in reports[1:]:
             items = SpiderpriceItem()
