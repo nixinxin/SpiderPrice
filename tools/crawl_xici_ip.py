@@ -12,7 +12,7 @@ cursor = conn.cursor()
 def crawl_ips():
     # 爬取西刺的免费ip代理
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0"}
-    result = requests.get("http://tvp.daxiangdaili.com/ip/?tid=557485331689053&num=2&operator=1&delay=1&category=2", headers=headers).text
+    result = requests.get("http://tvp.daxiangdaili.com/ip/?tid=557485331689053&num=100&operator=1&delay=1&category=2", headers=headers).text
     for i in result.split("\n"):
         ip, port = i.split(":")
         cursor.execute(
@@ -32,13 +32,14 @@ class GetIP(object):
 
     def judge_ip(self, ip, port):
         # 判断ip是否可用
-        http_url = "https://cn.bing.com/"
+        http_url = "http://nc.mofcom.gov.cn/channel/jghq2017/price_list.shtml"
         proxy_url = "http://{0}:{1}".format(ip, port)
         try:
             proxy_dict = {
                 "http": proxy_url,
             }
             response = requests.get(http_url, proxies=proxy_dict)
+            print(response.text)
         except Exception as e:
             print(e)
             print("invalid ip and port")

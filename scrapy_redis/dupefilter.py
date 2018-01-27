@@ -4,9 +4,10 @@ import time
 from scrapy.dupefilters import BaseDupeFilter
 from scrapy.utils.request import request_fingerprint
 
+from .bloomfilter import PyBloomFilter, conn
 from . import defaults
 from .connection import get_redis_from_settings
-from utils.bloomfilter import conn, PyBloomFilter
+
 
 logger = logging.getLogger(__name__)
 
@@ -97,13 +98,12 @@ class RFPDupeFilter(BaseDupeFilter):
 
         """
         fp = self.request_fingerprint(request)
-
         if self.bf.is_exist(fp):
             return True
         else:
             self.bf.add(fp)
             return False
-        # This returns the number of values added, zero if already exists.
+        # # This returns the number of values added, zero if already exists.
         # added = self.server.sadd(self.key, fp)
         # return added == 0
 

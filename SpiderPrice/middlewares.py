@@ -16,11 +16,15 @@ from scrapy.signalmanager import SignalManager
 from scrapy.responsetypes import responsetypes
 from scrapy.xlib.pydispatch import dispatcher
 from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import wait
+from selenium.webdriver.support import expected_conditions as EC
 from six.moves import queue
 from twisted.internet import defer, threads
 from twisted.python.failure import Failure
 
-
+from SpiderPrice.settings import DOWNLOAD_DELAY
+from tools.crawl_xici_ip import GetIP
 
 
 class AgriteachSpiderMiddleware(object):
@@ -76,6 +80,11 @@ class SpiderPriceDownloaderMiddleware(object):
     # scrapy acts as if the downloader middleware does not modify the
     # passed objects.
 
+    # def __init__(self):
+    #     self.driver = webdriver.Chrome()
+    #     self.wait = wait.WebDriverWait(self.driver, 10)
+    #     super(SpiderPriceDownloaderMiddleware, self).__init__()
+
     @classmethod
     def from_crawler(cls, crawler):
         # This method is used by Scrapy to create your spiders.
@@ -93,12 +102,18 @@ class SpiderPriceDownloaderMiddleware(object):
         # - or return a Request object
         # - or raise IgnoreRequest: process_exception() methods of
         #   installed downloader middleware will be called
+        # return request
+        # self.driver.get(request.url)
+        # self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'body > section > div > div.w890.fl > table')))
+        # time.sleep(DOWNLOAD_DELAY)
+        # response = self.driver.page_source
+        # 关键
+        # return HtmlResponse(self.driver.current_url, status=200, body=response, request=request, encoding='utf-8')
+
         user = getattr(UserAgent(), 'random')
         request.headers['User-Agent'] = user
-        spider.driver.get(request.url)
-        response = spider.driver.page_source
-        # 关键
-        return HtmlResponse(spider.driver.current_url, status=200, body=response, request=request, encoding='utf-8')
+        # get_ip = GetIP()
+        # request.meta["proxy"] = get_ip.get_random_ip()
 
     def process_response(self, request, response, spider):
         # Called with the response returned from the downloader.

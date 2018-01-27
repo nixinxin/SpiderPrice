@@ -1,35 +1,33 @@
 # -*- coding: utf-8 -*-
 import json
 import datetime
-from urllib.parse import urlencode
+import random
+import time
+from django.utils.http import urlencode
+from scrapy import Request, Spider
 
-from scrapy import Request
+from SpiderPrice.settings import STARTDAY, TIMEDELTA
 from scrapy_redis.spiders import RedisSpider
 from SpiderPrice.items import SpiderpriceItem
-from SpiderPrice.settings import STARTDAY, TIMEDELTA
 
 
-class AgripriceSpider(RedisSpider):
+class AgripriceSpider(Spider):
 
     name = 'agriprice'
     redis_key = "agriprice:start_urls"
     allowed_domains = ['nc.mofcom.gov.cn']
     start_urls = ['http://nc.mofcom.gov.cn/channel/jghq2017/price_list.shtml']
-
-    def __init__(self, *args, **kwargs):
-        indexdata = open("index/index.json", 'r', encoding='utf-8').read()
-        self.index = json.loads(indexdata)
-        self.cookie_dict = {}
-        self.querystring = {"par_craft_index": "",  # 类别编号
-                            "craft_index": "",  # 产品编号
-                            "startTime": "",
-                            "endTime": "",
-                            "par_p_index": "",  # 省份编号
-                            "p_index": "",  # 市场编号
-                            "keyword": "",
-                            }
-
-        super(AgripriceSpider, self).__init__()
+    indexdata = open("H:\pycharm\SpiderPrice\index\index.json", 'r', encoding='utf-8').read()
+    index = json.loads(indexdata)
+    cookie_dict = {}
+    querystring = {"par_craft_index": "",  # 类别编号
+                   "craft_index": "",  # 产品编号
+                   "startTime": "",
+                   "endTime": "",
+                   "par_p_index": "",  # 省份编号
+                   "p_index": "",  # 市场编号
+                   "keyword": "",
+                   }
 
     def parse(self, response):
         start = datetime.datetime.strptime(STARTDAY, '%Y-%m-%d').date()
@@ -44,42 +42,44 @@ class AgripriceSpider(RedisSpider):
                 end_day = start_day + ninedays
             self.querystring["startTime"] = start_day
             self.querystring["endTime"] = end_day
-
             for item in self.index:
                 category_id = item['id']
                 category = item['product']
                 self.querystring["par_craft_index"] = category_id
-
-                for product in item['sub_value'].keys():
+                for product in list(item['sub_value'].keys()):
                     product_id = item['sub_value'][product]
                     self.querystring["craft_index"] = product_id
                     parses = urlencode(self.querystring)
                     url = self.start_urls[0] + "?" + parses
                     yield Request(
                         url=url,
-                        dont_filter=True,
                         callback=self.parse_two,
                         meta={"category": category},
-                        cookies=self.cookie_dict
                     )
 
     def parse_two(self, response):
-        try:
-            all_page = int(response.css(".table-01.mt30 + script::text").extract_first().split(";")[0].split("=")[-1].strip())
-        except:
-            all_page = 0
-        if all_page > 3:
-            all_page = 1
-        for i in range(1, int(all_page) + 1):
-            self.querystring['page'] = str(i)
-            parses = urlencode(self.querystring)
-            url = self.start_urls[0] + "?" + parses
-            yield Request(
-                url=url,
-                dont_filter=True,
-                callback=self.parse_three,
-                meta={"category": response.meta.get("category", "")}
-            )
+        reports = response.css(".table-01.mt30 tr").extract()
+        if response.status == 200:
+            if len(reports) == 1:
+                all_page = 0
+            elif 2 <= len(reports) <= 9:
+                all_page = 1
+            else:
+                try:
+                    all_page = int(response.css(".table-01.mt30 + script::text").extract_first().split(";")[0].split("=")[-1].strip())
+                except Exception as e:
+                    all_page = 1
+            self.parse_three(response)
+            if int(all_page) > 1:
+                for i in range(2, int(all_page) + 1):
+                    self.querystring['page'] = str(i)
+                    parses = urlencode(self.querystring)
+                    url = self.start_urls[0] + "?" + parses
+                    time.sleep(random.randrange(1, 5) / 10)
+                    yield Request(
+                        url=url,
+                        callback=self.parse_three,
+                        meta={"category": response.meta.get("category", "")})
 
     def parse_three(self, response):
         reports = response.css(".table-01.mt30 tr")
