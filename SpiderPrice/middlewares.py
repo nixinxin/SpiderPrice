@@ -4,26 +4,16 @@
 #
 # See documentation in:
 # https://doc.scrapy.org/en/latest/topics/spider-middleware.html
-import time
 
 from fake_useragent import UserAgent
-from scrapy import signals
-from scrapy.http import HtmlResponse
-
 
 from scrapy import signals
-from scrapy.signalmanager import SignalManager
 from scrapy.responsetypes import responsetypes
-from scrapy.xlib.pydispatch import dispatcher
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import wait
-from selenium.webdriver.support import expected_conditions as EC
 from six.moves import queue
 from twisted.internet import defer, threads
 from twisted.python.failure import Failure
 
-from SpiderPrice.settings import DOWNLOAD_DELAY
 from tools.crawl_xici_ip import GetIP
 
 

@@ -1,17 +1,9 @@
-import datetime
+import redis
+import time
 
-start = datetime.datetime.strptime('2014-01-01', '%Y-%m-%d').date()
-end = datetime.date.today()
-interval = int(int((end - start).days) / 90) + 1
-ninedays = datetime.timedelta(days=90)
+pool = redis.ConnectionPool(host='localhost', port=6379, decode_responses=True)
+r = redis.Redis(connection_pool=pool)
 
-for i in range(0, interval):
-    if i != 0:
-        j = 1
-    start_day = start + ninedays * i
-    if i == interval - 1:
-        end_day = datetime.date.today()
-    else:
-        end_day = start_day + ninedays
+r.lpush("agriprice:start_urls", "http://nc.mofcom.gov.cn/channel/jghq2017/price_list.shtml")
+print(r.lrange('agriprice:start_urls', 0, -1))
 
-    print(start_day, end_day)

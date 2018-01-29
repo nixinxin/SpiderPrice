@@ -19,7 +19,6 @@ def crawl_ips():
             "insert proxy_ip(ip, port) VALUES('{0}', '{1}') on duplicate key update `ip`=values(`ip`)".format(
                ip, port))
         conn.commit()
-        print(i)
 
 
 class GetIP(object):
@@ -32,7 +31,7 @@ class GetIP(object):
 
     def judge_ip(self, ip, port):
         # 判断ip是否可用
-        http_url = "http://nc.mofcom.gov.cn/channel/jghq2017/price_list.shtml"
+        http_url = "http://www.baidu.com"
         proxy_url = "http://{0}:{1}".format(ip, port)
         try:
             proxy_dict = {
