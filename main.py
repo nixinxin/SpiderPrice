@@ -12,4 +12,5 @@ conn = redis.Redis(connection_pool=pool)
 # if not conn.exists(AgripriceSpider.redis_key):
 conn.lpush(AgripriceSpider.redis_key, AgripriceSpider.start_urls[0])
 
-execute(['scrapy', 'crawl', 'agriprice'])
+# execute(['scrapy', 'crawl', 'agriprice', '--nolog'])
+execute(['scrapy', 'crawl', 'agriprice', ])

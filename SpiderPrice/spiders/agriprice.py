@@ -98,30 +98,31 @@ class AgripriceSpider(RedisSpider):
     def parse(self, response):
         start = datetime.datetime.strptime(STARTDAY, '%Y-%m-%d').date()
         end = datetime.date.today()
-        interval = int(int((end - start).days) / TIMEDELTA) + 1
-        ninedays = datetime.timedelta(days=TIMEDELTA)
-        for i in range(0, interval):
-            start_day = (start + ninedays * i)
-            if i == interval - 1:
-                end_day = datetime.date.today()
-            else:
-                end_day = start_day + ninedays
-            self.querystring["startTime"] = start_day
-            self.querystring["endTime"] = end_day
-            for item in self.index:
-                category_id = item['id']
-                category = item['product']
-                self.querystring["par_craft_index"] = category_id
-                for product in list(item['sub_value'].keys()):
-                    product_id = item['sub_value'][product]
-                    self.querystring["craft_index"] = product_id
-                    parses = urlencode(self.querystring)
-                    url = self.start_urls[0] + "?" + parses
-                    yield Request(
-                        url=url,
-                        callback=self.parse_two,
-                        meta={"category": category},
-                    )
+        # interval = int(int((end - start).days) / TIMEDELTA) + 1
+        # ninedays = datetime.timedelta(days=TIMEDELTA)
+        # for i in range(0, interval):
+        #     start_day = (start + ninedays * i)
+        #     if i == interval - 1:
+        #         end_day = datetime.date.today()
+        #     else:
+        #         end_day = start_day + ninedays
+        self.querystring["startTime"] = start
+        self.querystring["endTime"] = end
+        for item in self.index:
+            category_id = item['id']
+            category = item['product']
+            self.querystring["par_craft_index"] = category_id
+            for product in list(item['sub_value'].keys()):
+                product_id = item['sub_value'][product]
+                self.querystring["craft_index"] = product_id
+                parses = urlencode(self.querystring)
+                url = self.start_urls[0] + "?" + parses
+                yield Request(
+                    url=url,
+                    callback=self.parse_two,
+                    meta={"category": category},
+                    dont_filter=True
+                )
 
     def parse_two(self, response):
         reports = response.css(".table-01.mt30 tr").extract()
@@ -144,6 +145,7 @@ class AgripriceSpider(RedisSpider):
                 yield Request(
                     url=url,
                     callback=self.parse_three,
+                    dont_filter=True,
                     meta={"category": response.meta.get("category", "")})
 
     def parse_three(self, response):
